@@ -3164,7 +3164,7 @@ Func InstallChrome($ChromeInstaller = "")
 	RunWait($TempDir & '\7zr.exe x "' & $ChromeInstaller & '" -y', $TempDir, @SW_HIDE)
 	RunWait($TempDir & '\7zr.exe x "' & $TempDir & '\chrome.7z" -y', $TempDir, @SW_HIDE)
 
-	; 检查主要文件是否存在
+	; 获取新的版本号
 	Local $latest = IniRead($TempDir & "\Update.ini", "general", "latest", "")
 	If Not StringInStr($latest, ".") Then ; 版本号中必须有 .
 		$latest = FileGetVersion($TempDir & "\Chrome-bin\chrome.exe")
@@ -3188,9 +3188,10 @@ Func InstallChrome($ChromeInstaller = "")
 		Return SetError(1, 0, 0) ; 解压错误
 	EndIf
 
-	FileMove($TempDir & "\Chrome-bin\*.*", $TempDir & "\Chrome-bin\" & $latest & "\", 9)
+	; 可能杀毒软件正在扫描大量新增文件，导致移动/重命名失败
+	FileCopy($TempDir & "\Chrome-bin\*.*", $TempDir & "\Chrome-bin\" & $latest & "\", 9)
 	DirRemove($ChromeDir & "\~updated", 1)
-	DirMove($TempDir & "\Chrome-bin\" & $latest, $ChromeDir & "\~updated", 1)
+	DirCopy($TempDir & "\Chrome-bin\" & $latest, $ChromeDir & "\~updated", 1)
 
 	; Copy chrome
 	$LangUpdateCloseChrome = lang("Update", "UpdateCloseChrome", _
@@ -3208,7 +3209,6 @@ Func ApplyUpdate()
 	ElseIf @TrayIconVisible Then
 		TrayTip("MyChrome", $LangApplyUpdate & ' ...', 5, 1)
 	EndIf
-	FileMove($ChromeDir & "\~updated\*.*", $ChromeDir, 9)
 	DirCopy($ChromeDir & "\~updated", $ChromeDir, 1)
 
 	If StringRegExpReplace($ChromePath, ".*\\", "") <> "chrome.exe" Then
